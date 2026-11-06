@@ -23,7 +23,8 @@ El contrato compartido está en [docs/api-contract.md](docs/api-contract.md): to
 
 - Windows con .NET SDK 8 y SQL Server accesible. En el equipo de desarrollo se comprobó `Server=localhost` con autenticación integrada y permiso para crear la base.
 - Node.js 22.12; Angular utiliza CLI local 21, independiente del CLI global.
-- Flutter 3.47.9 con Dart 3.13.7, versiones utilizadas para compilar y comprobar la app. Para Android se requiere además JDK 17, SDK Android y emulador o dispositivo; se verificó un emulador API 35.
+- Flutter 3.47.9 con Dart 3.13.7, versiones utilizadas para compilar y comprobar la app. Flutter Web usa Microsoft Edge, seleccionado por el script de arranque.
+- Para Android: JDK 17, Android SDK con plataforma 36, Build-Tools 36.0.0 y NDK `28.2.13676358`, más un emulador o dispositivo. La plataforma de compilación es 36; el emulador verificado ejecuta API 35.
 - PowerShell 7.5 o superior para los scripts de aceptación (se utilizó 7.6.7).
 
 ## Preparar y ejecutar la API
@@ -67,6 +68,15 @@ El script termina con código distinto de cero si falla una comprobación. Gener
 | Angular | http://localhost:4200 |
 
 ## Ejecutar Flutter
+
+Si Flutter no detecta el SDK Android o JDK, indicar sus rutas locales y comprobar las licencias antes de compilar:
+
+```powershell
+flutter config --android-sdk 'C:\ruta\Android\Sdk'
+flutter config --jdk-dir 'C:\ruta\jdk-17'
+flutter doctor --android-licenses
+flutter doctor -v
+```
 
 Con Flutter instalado y disponible en PATH, preparar las dependencias y arrancar cada destino en una terminal separada:
 
