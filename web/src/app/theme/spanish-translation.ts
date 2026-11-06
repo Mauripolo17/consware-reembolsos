@@ -1,0 +1,31 @@
+import { Translation } from 'primeng/api';
+
+export const spanishTranslation: Translation = {
+  accept: 'Aceptar',
+  reject: 'Rechazar',
+  choose: 'Seleccionar',
+  cancel: 'Cancelar',
+  emptyMessage: 'No hay resultados',
+  emptyFilterMessage: 'No hay coincidencias',
+  emptySelectionMessage: 'Ninguna opción seleccionada',
+  emptySearchMessage: 'No hay resultados disponibles',
+  selectionMessage: '{0} opciones seleccionadas',
+  searchMessage: '{0} resultados disponibles',
+  aria: {
+    close: 'Cerrar aviso',
+    firstPageLabel: 'Primera página',
+    lastPageLabel: 'Última página',
+    nextPageLabel: 'Página siguiente',
+    prevPageLabel: 'Página anterior',
+    previousPageLabel: 'Página anterior',
+    pageLabel: 'Página {page}',
+    rowsPerPageLabel: 'Solicitudes por página',
+    jumpToPageDropdownLabel: 'Ir a la página',
+    jumpToPageInputLabel: 'Número de página',
+    selectRow: 'Seleccionar solicitud',
+    unselectRow: 'Quitar selección',
+    navigation: 'Paginación de solicitudes',
+    next: 'Siguiente',
+    previous: 'Anterior',
+  },
+};
