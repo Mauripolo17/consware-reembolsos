@@ -27,7 +27,25 @@ El contrato compartido está en [docs/api-contract.md](docs/api-contract.md): to
 - Para Android: JDK 17, Android SDK con plataforma 36, Build-Tools 36.0.0 y NDK `28.2.13676358`, más un emulador o dispositivo. La plataforma de compilación es 36; el emulador verificado ejecuta API 35.
 - PowerShell 7.5 o superior para los scripts de aceptación (se utilizó 7.6.7).
 
-## Preparar y ejecutar la API
+## Arrancar con el entorno ya preparado
+
+Si las herramientas, dependencias y migraciones ya están preparadas, ejecutar cada comando en una terminal separada desde la raíz del repositorio. Estos comandos arrancan las aplicaciones; no reinstalan los SDK:
+
+```powershell
+pwsh -File scripts/start.ps1 api
+```
+
+```powershell
+pwsh -File scripts/start.ps1 mobile-web
+```
+
+```powershell
+pwsh -File scripts/start.ps1 web
+```
+
+El script encuentra también Flutter en `%LOCALAPPDATA%\consware-tools\flutter\bin`, aunque la terminal todavía no lo tenga en `PATH`. Detener cada aplicación con `Ctrl+C`. Para Android se debe iniciar además un emulador o conectar un dispositivo.
+
+## Preparación inicial de la API
 
 Desde la raíz del repositorio:
 
@@ -69,16 +87,37 @@ El script termina con código distinto de cero si falla una comprobación. Gener
 
 ## Ejecutar Flutter
 
-Si Flutter no detecta el SDK Android o JDK, indicar sus rutas locales y comprobar las licencias antes de compilar:
+Comprobar primero que la terminal reconoce Flutter:
 
 ```powershell
-flutter config --android-sdk 'C:\ruta\Android\Sdk'
-flutter config --jdk-dir 'C:\ruta\jdk-17'
+flutter --version
+```
+
+Si el SDK ya existe en la ubicación que admite el script pero la terminal no reconoce `flutter`, añadir su carpeta `bin` al `PATH` de esa sesión:
+
+```powershell
+$flutterBin = Join-Path $env:LOCALAPPDATA 'consware-tools\flutter\bin'
+$env:Path = "$flutterBin;$env:Path"
+flutter --version
+```
+
+Para que las próximas sesiones también lo encuentren, agregar esa misma carpeta al `PATH` de usuario de Windows y volver a abrir la aplicación de terminal. Si Flutter está en otra ubicación, utilizar su carpeta `bin` real. Esto utiliza el SDK existente; no lo instala de nuevo.
+
+Solo durante la preparación inicial de Android, si Flutter no detecta SDK o JDK, indicar rutas existentes. Estos ejemplos usan las ubicaciones habituales de Windows; comprobarlas y ajustarlas al equipo antes de ejecutarlos:
+
+```powershell
+$androidSdkPath = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+$javaJdkPath = Join-Path $env:ProgramFiles 'Java\jdk-17'
+Test-Path $androidSdkPath
+Test-Path $javaJdkPath
+# Continuar únicamente si ambas rutas existen
+flutter config --android-sdk "$androidSdkPath"
+flutter config --jdk-dir "$javaJdkPath"
 flutter doctor --android-licenses
 flutter doctor -v
 ```
 
-Con Flutter instalado y disponible en PATH, preparar las dependencias y arrancar cada destino en una terminal separada:
+Si SDK, JDK y licencias ya están configurados, omitir esa preparación. Para Flutter Web no hace falta configurar Android. Preparar las dependencias una vez y arrancar cada destino en una terminal separada:
 
 ```powershell
 cd mobile
