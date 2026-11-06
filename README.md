@@ -4,7 +4,7 @@ Sistema de solicitudes de reembolso con API ASP.NET, persistencia SQL Server, ap
 
 ## Estado de la entrega
 
-API implementada y verificada: 50/50 casos de aceptación independiente aprobados, además de las verificaciones del backend y persistencia tras reinicio. Flutter está en implementación; Angular espera la aceptación de Flutter. Los resultados comprobados están en `docs/test-results.md`.
+La API cuenta con aceptación HTTP y persistencia verificadas. Flutter Web consume la API real; la verificación Android está en curso y Angular se integra después. Los resultados comprobados están en [docs/test-results.md](docs/test-results.md).
 
 ## Reglas de negocio
 
@@ -15,7 +15,7 @@ API implementada y verificada: 50/50 casos de aceptación independiente aprobado
 
 ## Arquitectura
 
-Un backend .NET 8 con controllers/DTOs, servicio de negocio y EF Core 8. SQL Server guarda los datos en una base nueva `ConswareReimbursements`. La API es la autoridad de las reglas. Flutter permite registrar y consultar gastos del empleado; Angular permite al aprobador decidir.
+Un backend .NET 8 con controllers/DTOs, servicio de negocio, mapper inyectado y EF Core 8. El estado se representa con `ReimbursementStatus` y se almacena como texto en SQL Server. Las excepciones de validación, inexistencia y conflicto se traducen de forma centralizada a HTTP. La base es `ConswareReimbursements`. Flutter registra y consulta gastos del empleado; Angular permite al aprobador decidir.
 
 El contrato compartido está en [docs/api-contract.md](docs/api-contract.md): todas las respuestas de aplicación tienen `success`, `message`, `data`, `errors` y `traceId`, conservando los códigos HTTP correctos. El código y los contratos usan inglés; los mensajes para el usuario usan español.
 
@@ -66,18 +66,29 @@ El script termina con código distinto de cero si falla una comprobación. Gener
 | API desde emulador Android | http://10.0.2.2:5000 |
 | Angular | http://localhost:4200 |
 
-## Verificación y herramientas de agentes
+## Ejecutar Flutter
 
-Se instalaron globalmente `@playwright/mcp@0.0.84` y `@cocaxcode/api-testing-mcp@0.13.4`, y se registraron en Codex, Antigravity y OpenCode. No son dependencias de ejecución del producto.
+Con Flutter instalado y disponible en PATH, preparar las dependencias y arrancar cada destino en una terminal separada:
 
-`python scripts/verify-mcp.py` comprueba inicialización y catálogo MCP y abre un navegador Edge aislado. Con la API iniciada: `python scripts/verify-mcp.py --api-url http://127.0.0.1:5000/api/reimbursements`. Usar IPv4 explícita para este cliente Node: en el equipo de desarrollo `localhost` resolvió a IPv6 mientras la API escuchaba en IPv4. Las evidencias se guardan localmente en `artifacts/`, fuera de Git. La prueba web no sustituye ejecutar Flutter en Android.
+```powershell
+cd mobile
+flutter pub get
+cd ..
+pwsh -File scripts/start.ps1 mobile-web
+```
+
+Para Android, iniciar un emulador, consultar su identificador mediante `flutter devices` y ejecutar:
+
+```powershell
+pwsh -File scripts/start.ps1 mobile-android -Device emulator-5554
+```
+
+La URL de API es configurable con `-ApiBaseUrl`. En navegador se utiliza `http://localhost:5000`; el emulador Android accede al equipo mediante `http://10.0.2.2:5000`. El script admite `-FlutterPath` si Flutter no está en PATH. La configuración de HTTP sin cifrar se limita al desarrollo Android.
 
 ## Decisiones y límites
 
-Se conserva una arquitectura pequeña y una identidad fija `Empleado Demo`, sin autenticación, adjuntos, microservicios ni despliegue. El foco es un flujo real, mensajes de error claros y una interfaz adaptable en azul y cristal. Un sistema de producción necesitaría autorización, auditoría, comprobantes y gestión real de empleados.
+Se conserva una arquitectura pequeña y una identidad fija `Empleado Demo`, sin autenticación, adjuntos, microservicios ni despliegue. La interfaz usa azules claros y superficies de cristal, controles táctiles y anchos máximos según la pantalla. Un sistema de producción necesitaría autorización, auditoría, comprobantes y gestión real de empleados.
 
 ## Uso de IA
 
-Codex coordina la arquitectura, el contrato, las instrucciones y las verificaciones, y tiene trabajadores para backend y aceptación/panel web. Antigravity prepara Flutter/Android y desarrollará la aplicación del empleado. Se intentó utilizar OpenCode, pero su cuota gratuita estaba agotada; el usuario autorizó sustituirlo por Codex. El usuario autorizó iniciar Antigravity con `--dangerously-skip-permissions` para evitar interrupciones de permisos.
-
-Las herramientas ayudan a generar y revisar el código. Los resultados de pruebas se documentarán solo después de ejecutarse; las decisiones deberán poder explicarse y modificarse durante la entrevista.
+Se utilizaron Codex y Antigravity como apoyo para definir la arquitectura y los contratos, implementar componentes, revisar la integración y ejecutar verificaciones. Las reglas se contrastaron con el enunciado y las pruebas se ejecutaron contra la API y SQL Server reales. Las decisiones técnicas y los resultados comprobados están documentados en este repositorio.

@@ -25,3 +25,17 @@ artifacts/
 *.ldf
 __pycache__/
 *.pyc
+
+# Private local agent workflow and interview preparation
+/AGENTS.md
+/.agents/
+/docs/tasks/
+/docs/demo.md
+/backend/IMPLEMENTATION.md
+/mobile/IMPLEMENTATION.md
+/mobile/ENVIRONMENT.md
+/web/IMPLEMENTATION.md
+/scripts/configure-mcp.py
+/scripts/verify-mcp.py
+/scripts/verify_mcp.py
+/scripts/capture-web.py
