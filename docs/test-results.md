@@ -34,9 +34,17 @@ El selector de filtro usa el enum del modelo y admite Todas, Pendientes, Aprobad
 
 ## Angular
 
-Se compiló la aplicación en modo producción y se ejecutó la suite de aceptación reproducible mediante `cd web` y `npm test`: **una prueba integrada con 31 comprobaciones aprobadas**, contra la API y SQL Server reales. Incluye aprobación, rechazo con motivo obligatorio, conflicto 409, bloqueo del doble envío, filtros, respuestas fuera de orden, carga, vacío, fallos de red y recuperación. Los importes extremos se muestran sin pérdida de centavos.
+Se ejecutó la suite de aceptación reproducible mediante `cd web` y `npm test`: **una prueba integrada con 102 comprobaciones aprobadas**, contra la API y SQL Server reales. Incluye aprobación, rechazo con motivo obligatorio, conflicto 409, bloqueo del doble envío, filtros, respuestas fuera de orden, carga, vacío, fallos de red y recuperación. Los importes extremos se muestran sin pérdida de centavos.
 
-Se revisaron listado y diálogo a 360, 768 y 1440 píxeles, incluida una razón larga de 500 caracteres. Los interceptores de red se usan únicamente para provocar latencia y fallos controlados. La revisión visual con PrimeNG y la comprobación integral entre ambos clientes siguen en curso; estos resultados corresponden a la versión funcional anterior al rediseño.
+El panel utiliza PrimeNG 21 con tabla paginada, selector de estado, tarjetas móviles, Toast y diálogos. Se revisaron listado, notificaciones, captura del motivo y confirmaciones a 360, 768 y 1440 píxeles, incluida una razón larga de 500 caracteres. Se comprobaron nombres accesibles, tooltips, foco, Escape y ajuste al viewport. Los interceptores de red se usan únicamente para provocar latencia y fallos controlados.
+
+`npm run build`: compilación de producción aprobada, sin advertencias. La misma función de aceptación aprobó también 102/102 comprobaciones mediante Playwright MCP; las lecturas de confirmación por API MCP comprobaron los estados persistidos y el motivo recortado.
+
+Los botones Aprobar y Rechazar son iconos con etiqueta accesible. Abrir o cancelar una confirmación no envía PATCH; confirmar envía exactamente uno. Cancelar la confirmación del rechazo conserva el motivo editable. Durante el envío se bloquean las acciones repetidas y el cierre del diálogo. El error de carga conserva una acción de reintento aunque el Toast desaparezca.
+
+## Integración entre clientes
+
+Se registraron dos solicitudes de 650123 COP desde el formulario Flutter Web. Angular aprobó una y rechazó la otra mediante sus iconos y confirmaciones. Se comprobó que no había PATCH antes de confirmar y que cada confirmación emitía uno solo. Al actualizar Flutter, la respuesta de API y la tarjeta renderizada mostraron el estado final correcto; la rechazada mostró además el motivo completo. Estos flujos utilizaron la API real y SQL Server, sin interceptar las decisiones.
 
 ## Reproducción
 
@@ -46,6 +54,11 @@ pwsh -File scripts/verify-api.ps1
 
 # Después de reiniciar esa API, conservando el snapshot de la prueba anterior
 pwsh -File scripts/verify-api.ps1 -VerifyPersistence
+
+# API y Angular iniciados; Microsoft Edge instalado
+cd web
+npm run build
+npm test
 ```
 
 Los registros del script utilizan identificadores de empleado únicos. El script no elimina datos ni reinicia procesos. Las comprobaciones pendientes no se contabilizan como aprobadas.

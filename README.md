@@ -4,7 +4,7 @@ Sistema de solicitudes de reembolso con API ASP.NET, persistencia SQL Server, ap
 
 ## Estado de la entrega
 
-La API cuenta con aceptación HTTP y persistencia verificadas. Flutter está comprobado contra esa API en navegador y Android, con selector de estado y diez pruebas automatizadas aprobadas. Angular permite filtrar, aprobar y rechazar, con aceptación funcional automatizada; su presentación está en renovación con PrimeNG. Los resultados comprobados están en [docs/test-results.md](docs/test-results.md).
+Los tres componentes están implementados y comprobados contra SQL Server: API ASP.NET, Flutter en navegador y Android, y panel Angular con PrimeNG. Se verificaron también los flujos completos de aprobación y rechazo entre ambos clientes. Los resultados y límites comprobados están en [docs/test-results.md](docs/test-results.md).
 
 ## Reglas de negocio
 
@@ -114,7 +114,7 @@ cd ..
 pwsh -File scripts/start.ps1 web
 ```
 
-El panel abre en `http://localhost:4200`. La URL de API se configura en `web/src/environments/environment.ts`. El filtro comienza en Pendientes y las decisiones se envían a la API real.
+El panel abre en `http://localhost:4200`. La URL de API se configura en `web/src/environments/environment.ts`. El filtro comienza en Pendientes y las decisiones se envían a la API real. PrimeNG aporta tabla paginada, selector, estados, Toast y diálogos. Los botones de icono tienen nombres accesibles y tooltip; ambas decisiones exigen confirmación. El rechazo permite escribir, revisar y confirmar el motivo antes de enviarlo.
 
 ```powershell
 cd web
@@ -128,7 +128,7 @@ La suite de Playwright crea registros de prueba identificables y conserva los da
 
 ## Decisiones y límites
 
-Se conserva una arquitectura pequeña y una identidad fija `Empleado Demo`, sin autenticación, adjuntos, microservicios ni despliegue. La interfaz usa azules claros y superficies de cristal, controles táctiles y anchos máximos según la pantalla. Un sistema de producción necesitaría autorización, auditoría, comprobantes y gestión real de empleados.
+Se conserva una arquitectura pequeña y una identidad fija `Empleado Demo`, sin autenticación, adjuntos, microservicios ni despliegue. La interfaz usa azules claros y superficies de cristal, controles táctiles y anchos máximos según la pantalla. Angular incluye la fuente Inter en sus propios archivos, sin depender de un servicio externo de fuentes. Un sistema de producción necesitaría autorización, auditoría, comprobantes y gestión real de empleados.
 
 La API usa `decimal(18,2)`. Angular conserva el rango completo sin convertir los importes a números binarios de JavaScript; Flutter limita el formulario a 9999999999.99 COP para preservar los centavos. Ambos clientes presentan los estados en español y usan los valores del enum en el contrato.
 
