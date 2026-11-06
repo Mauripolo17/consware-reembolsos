@@ -126,11 +126,38 @@ cd ..
 pwsh -File scripts/start.ps1 mobile-web
 ```
 
-Para Android, iniciar un emulador, consultar su identificador mediante `flutter devices` y ejecutar:
+### Iniciar el emulador y ejecutar Flutter Android
+
+Con las herramientas ya preparadas, no es necesario repetir la instalación. Ejecutar los siguientes pasos desde la raíz del repositorio.
+
+1. Iniciar la API en una terminal y dejarla abierta:
+
+```powershell
+pwsh -File scripts/start.ps1 api
+```
+
+2. En otra terminal, consultar los emuladores disponibles e iniciar el preparado para esta prueba:
+
+```powershell
+flutter emulators
+flutter emulators --launch consware_pixel_api35
+```
+
+El nombre `consware_pixel_api35` corresponde al emulador creado en el entorno de desarrollo. En otro equipo, utilizar el identificador listado por `flutter emulators`.
+
+3. Esperar a que aparezca la pantalla de inicio de Android y comprobar que Flutter detecta el dispositivo:
+
+```powershell
+flutter devices
+```
+
+4. Con la API todavía ejecutándose, iniciar la app en el emulador:
 
 ```powershell
 pwsh -File scripts/start.ps1 mobile-android -Device emulator-5554
 ```
+
+Si `flutter devices` muestra un identificador diferente, utilizarlo en `-Device`. Mantener abierta la terminal de Flutter mientras se prueba la aplicación.
 
 La URL de API es configurable con `-ApiBaseUrl`. En navegador se utiliza `http://localhost:5000`; el emulador Android accede al equipo mediante `http://10.0.2.2:5000`. El script admite `-FlutterPath` si Flutter no está en PATH. La configuración de HTTP sin cifrar se limita al desarrollo Android.
 
