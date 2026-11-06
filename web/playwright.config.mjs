@@ -7,5 +7,5 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   outputDir: './artifacts/test-results',
-  use: { channel: 'msedge', headless: true, locale: 'es-CO' },
+  use: { channel: 'msedge', headless: true, locale: 'es-CO', actionTimeout: 15000 },
 });

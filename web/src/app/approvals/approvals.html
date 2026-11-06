@@ -1,84 +1,122 @@
 <header class="site-header">
   <div class="header-inner">
     <a class="brand" href="/" aria-label="Consware, inicio"
-      ><span class="brand-mark" aria-hidden="true">C</span
-      ><span>Consware<small>Reembolsos</small></span></a
-    ><span class="role-label">Portal del aprobador</span>
+      ><span class="brand-mark" aria-hidden="true"><i class="pi pi-wallet"></i></span
+      ><span>consware<span class="brand-caption">Gestión de reembolsos</span></span></a
+    >
+    <div class="workspace-identity">
+      <span class="workspace-icon" aria-hidden="true"><i class="pi pi-shield"></i></span
+      ><span>Espacio de trabajo<strong>Aprobaciones</strong></span>
+    </div>
   </div>
 </header>
 <main>
+  <div class="breadcrumb">
+    <span>Reembolsos</span><i class="pi pi-angle-right" aria-hidden="true"></i
+    ><strong>Revisión de solicitudes</strong>
+  </div>
   <section class="page-heading" aria-labelledby="page-title">
-    <div>
-      <p class="eyebrow">GESTIÓN DE GASTOS</p>
+    <div class="heading-copy">
+      <div class="eyebrow"><span></span>PORTAL DEL APROBADOR</div>
       <h1 id="page-title">Solicitudes de reembolso</h1>
-      <p class="intro">Revisa cada gasto y acompaña a tu equipo con una respuesta clara.</p>
+      <p>
+        Una revisión clara. Una respuesta a tiempo.<br class="mobile-break" />
+        Gestiona los gastos de tu equipo en un solo lugar.
+      </p>
     </div>
-    <span class="policy-note">Hasta $500.000 COP<br /><strong>Aprobación automática</strong></span>
+    <aside class="policy-note" aria-label="Política de aprobación">
+      <span class="policy-icon" aria-hidden="true"><i class="pi pi-bolt"></i></span>
+      <div>
+        <strong>Los gastos pequeños avanzan solos</strong>
+        <p>
+          Hasta $500.000 COP se aprueban automáticamente.<br />Las demás solicitudes esperan tu
+          revisión.
+        </p>
+      </div>
+    </aside>
   </section>
 
-  @if (notice()) {
-    <div class="notice" role="status">
-      <span>{{ notice() }}</span
-      ><button class="text-button" (click)="notice.set('')" aria-label="Cerrar aviso">
-        Cerrar
-      </button>
+  <section class="workspace" aria-labelledby="results-title">
+    <div class="workspace-heading">
+      <div class="workspace-title">
+        <span class="section-icon" aria-hidden="true"><i class="pi pi-inbox"></i></span>
+        <div>
+          <h2 id="results-title">{{ resultTitle }}</h2>
+          <p>
+            {{ loading() ? 'Consultando solicitudes…' : items().length + ' solicitudes'
+            }}<span class="desktop-hint"> · Más recientes primero</span>
+          </p>
+        </div>
+      </div>
+      <span class="review-hint"
+        ><i class="pi pi-lock" aria-hidden="true"></i>Decisiones definitivas</span
+      >
     </div>
-  }
-
-  <section class="workspace" aria-label="Solicitudes">
     <div class="toolbar">
       <div class="filter">
         <label for="status-filter">Estado de la solicitud</label
-        ><select
-          id="status-filter"
+        ><p-select
+          inputId="status-filter"
+          ariaLabel="Estado de la solicitud"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
           [(ngModel)]="statusFilter"
-          (ngModelChange)="filterChanged()"
+          (onChange)="filterChanged()"
           [disabled]="busyId() !== null"
-        >
-          <option [ngValue]="null">Todos los estados</option>
-          @for (status of statuses; track status) {
-            <option [ngValue]="status">{{ statusLabels[status] }}</option>
-          }
-        </select>
+          appendTo="body"
+          styleClass="status-selector"
+        />
       </div>
-      <button
-        class="secondary refresh"
-        (click)="load()"
+      <p-button
+        label="Actualizar"
+        ariaLabel="Actualizar"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [outlined]="true"
+        [loading]="loading()"
         [disabled]="loading() || busyId() !== null"
-      >
-        <span aria-hidden="true">↻</span> Actualizar
-      </button>
+        (onClick)="load()"
+      />
     </div>
 
-    @if (error()) {
-      <div class="error-panel" role="alert">
-        <h2>No pudimos completar la operación</h2>
-        <p>{{ error() }}</p>
-        @if (traceId()) {
-          <p class="reference">Referencia: {{ traceId() }}</p>
-        }
-        <button class="secondary" (click)="load()" [disabled]="loading()">
-          Reintentar consulta
-        </button>
-      </div>
-    }
-    <div [attr.aria-busy]="loading()">
+    <div class="results-content" [attr.aria-busy]="loading()">
       @if (loading()) {
         <div class="state-panel" role="status">
-          <span class="spinner" aria-hidden="true"></span>
-          <h2>Cargando solicitudes</h2>
+          <p-progress-spinner
+            strokeWidth="3"
+            ariaLabel="Cargando solicitudes"
+            [style]="{ width: '40px', height: '40px' }"
+          />
+          <h3>Cargando solicitudes</h3>
           <p>Estamos consultando los gastos de tu equipo.</p>
         </div>
-      } @else if (!error() && items().length === 0) {
+      } @else if (error()) {
+        <div class="state-panel error-panel">
+          <span class="state-icon error-icon" aria-hidden="true"><i class="pi pi-wifi"></i></span>
+          <h3>No pudimos cargar las solicitudes</h3>
+          <p>{{ error() }}</p>
+          @if (traceId()) {
+            <small>Referencia: {{ traceId() }}</small>
+          }
+          <p-button
+            label="Reintentar consulta"
+            ariaLabel="Reintentar consulta"
+            icon="pi pi-refresh"
+            [outlined]="true"
+            (onClick)="load()"
+          />
+        </div>
+      } @else if (items().length === 0) {
         <div class="state-panel">
-          <span class="empty-icon" aria-hidden="true">✓</span>
-          <h2>
+          <span class="state-icon" aria-hidden="true"><i class="pi pi-check-circle"></i></span>
+          <h3>
             {{
               statusFilter === pending
                 ? 'No hay solicitudes pendientes'
                 : 'No hay solicitudes en este estado'
             }}
-          </h2>
+          </h3>
           <p>
             {{
               statusFilter === pending
@@ -87,114 +125,151 @@
             }}
           </p>
         </div>
-      } @else if (items().length > 0) {
-        <div class="results-heading">
-          <h2>{{ statusFilter ? statusLabels[statusFilter] + 's' : 'Todas las solicitudes' }}</h2>
-          <span
-            >{{ items().length }} {{ items().length === 1 ? 'solicitud' : 'solicitudes' }} · Más
-            recientes primero</span
-          >
-        </div>
+      } @else {
         <div class="desktop-table">
-          <table>
-            <caption class="sr-only">
-              Solicitudes de reembolso ordenadas de la más reciente a la más antigua
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Colaborador y gasto</th>
-                <th scope="col">Monto</th>
-                <th scope="col">Estado</th>
-                <th scope="col">Revisión</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (item of items(); track item.id) {
-                <tr [attr.data-id]="item.id">
-                  <td>
-                    <span class="record-meta">#{{ item.id }} · {{ item.category }}</span>
-                    <h3>{{ item.employeeName }}</h3>
-                    <p class="description">{{ item.description }}</p>
-                    <time>{{ item.createdAtUtc | date: 'dd/MM/yyyy · HH:mm' }}</time>
-                    @if (item.rejectionReason) {
-                      <p class="rejection-reason">
-                        <strong>Motivo del rechazo:</strong> {{ item.rejectionReason }}
-                      </p>
-                    }
-                  </td>
-                  <td class="amount">
-                    <app-monetary-value [value]="item.amountDisplay" /><small>COP</small>
-                  </td>
-                  <td>
-                    <span class="badge" [attr.data-status]="item.status">{{
-                      statusLabels[item.status]
-                    }}</span>
-                  </td>
-                  <td>
-                    @if (item.status === pending) {
-                      <div class="actions">
-                        <button
-                          class="primary"
-                          (click)="approve(item)"
-                          [disabled]="busyId() !== null"
-                        >
-                          {{ busyId() === item.id ? 'Procesando…' : 'Aprobar' }}</button
-                        ><button
-                          class="reject-button"
-                          (click)="openReject(item)"
-                          [disabled]="busyId() !== null"
-                        >
-                          Rechazar
-                        </button>
-                      </div>
-                    } @else {
-                      <span class="decision-label"
-                        >Resuelta<time>{{
-                          item.decidedAtUtc | date: 'dd/MM/yyyy · HH:mm'
-                        }}</time></span
-                      >
-                    }
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <p-table
+            [value]="items()"
+            dataKey="id"
+            [paginator]="true"
+            [rows]="pageSize"
+            [first]="first"
+            (onPage)="pageChanged($event)"
+            [rowsPerPageOptions]="[8, 16, 32]"
+            [pageLinks]="3"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="{first}–{last} de {totalRecords}"
+            paginatorDropdownAppendTo="body"
+            [tableStyle]="{ 'table-layout': 'fixed' }"
+            ariaLabel="Solicitudes de reembolso"
+          >
+            <ng-template #header
+              ><tr>
+                <th scope="col" class="employee-column">Colaborador</th>
+                <th scope="col" class="expense-column">Detalle del gasto</th>
+                <th scope="col" class="amount-column">Monto solicitado</th>
+                <th scope="col" class="status-column">Estado</th>
+                <th scope="col" class="actions-column">Revisión</th>
+              </tr></ng-template
+            >
+            <ng-template #body let-item
+              ><tr [attr.data-id]="item.id">
+                <td>
+                  <div class="employee">
+                    <span class="avatar" aria-hidden="true">{{ initials(item.employeeName) }}</span>
+                    <div class="employee-info">
+                      <h3>{{ item.employeeName }}</h3>
+                      <span class="record-id">Solicitud #{{ item.id }}</span>
+                    </div>
+                  </div>
+                  <time>{{ item.createdAtUtc | date: 'dd/MM/yyyy · HH:mm' }}</time>
+                </td>
+                <td>
+                  <span class="category"
+                    ><i [class]="'pi ' + categoryIcon(item.category)" aria-hidden="true"></i
+                    >{{ item.category }}</span
+                  ><app-expense-description [text]="item.description" />
+                  @if (item.rejectionReason) {
+                    <div class="rejection-reason">
+                      <strong>Motivo del rechazo</strong>
+                      <p>{{ item.rejectionReason }}</p>
+                    </div>
+                  }
+                </td>
+                <td class="amount">
+                  <app-monetary-value [value]="item.amountDisplay" /><small
+                    >Pesos colombianos</small
+                  >
+                </td>
+                <td>
+                  <p-tag
+                    [value]="statusLabel(item.status)"
+                    [severity]="statusSeverity(item.status)"
+                  />
+                </td>
+                <td>
+                  @if (item.status === pending) {
+                    <div class="actions">
+                      <p-button
+                        [label]="busyId() === item.id ? 'Procesando…' : 'Aprobar'"
+                        [ariaLabel]="busyId() === item.id ? 'Procesando…' : 'Aprobar'"
+                        icon="pi pi-check"
+                        [loading]="busyId() === item.id"
+                        [disabled]="busyId() !== null"
+                        (onClick)="approve(item)"
+                      /><p-button
+                        label="Rechazar"
+                        ariaLabel="Rechazar"
+                        icon="pi pi-times"
+                        severity="danger"
+                        [outlined]="true"
+                        [disabled]="busyId() !== null"
+                        (onClick)="openReject(item)"
+                      />
+                    </div>
+                  } @else {
+                    <span class="decision-label"
+                      ><i class="pi pi-check-circle" aria-hidden="true"></i>Resuelta<time>{{
+                        item.decidedAtUtc | date: 'dd/MM/yyyy · HH:mm'
+                      }}</time></span
+                    >
+                  }
+                </td>
+              </tr></ng-template
+            >
+          </p-table>
         </div>
         <div class="request-cards">
-          @for (item of items(); track item.id) {
+          @for (item of pagedItems; track item.id) {
             <article
               class="request-card"
               [attr.data-id]="item.id"
               [attr.aria-label]="'Solicitud ' + item.id"
             >
               <div class="card-top">
-                <span class="record-meta">#{{ item.id }} · {{ item.category }}</span
-                ><span class="badge" [attr.data-status]="item.status">{{
-                  statusLabels[item.status]
-                }}</span>
+                <span class="record-id">SOLICITUD #{{ item.id }}</span
+                ><p-tag
+                  [value]="statusLabel(item.status)"
+                  [severity]="statusSeverity(item.status)"
+                />
               </div>
-              <h3>{{ item.employeeName }}</h3>
+              <div class="employee">
+                <span class="avatar" aria-hidden="true">{{ initials(item.employeeName) }}</span>
+                <h3>{{ item.employeeName }}</h3>
+              </div>
               <p class="amount">
-                <app-monetary-value [value]="item.amountDisplay" /> <small>COP</small>
+                <app-monetary-value [value]="item.amountDisplay" /><small>COP</small>
               </p>
-              <p class="description">{{ item.description }}</p>
-              <time>Registrada: {{ item.createdAtUtc | date: 'dd/MM/yyyy · HH:mm' }}</time>
+              <span class="category"
+                ><i [class]="'pi ' + categoryIcon(item.category)" aria-hidden="true"></i
+                >{{ item.category }}</span
+              ><app-expense-description [text]="item.description" /><time
+                ><i class="pi pi-calendar" aria-hidden="true"></i
+                >{{ item.createdAtUtc | date: 'dd/MM/yyyy · HH:mm' }}</time
+              >
               @if (item.rejectionReason) {
-                <p class="rejection-reason">
-                  <strong>Motivo del rechazo:</strong> {{ item.rejectionReason }}
-                </p>
+                <div class="rejection-reason">
+                  <strong>Motivo del rechazo</strong>
+                  <p>{{ item.rejectionReason }}</p>
+                </div>
               }
               @if (item.status === pending) {
                 <div class="actions">
-                  <button class="primary" (click)="approve(item)" [disabled]="busyId() !== null">
-                    {{ busyId() === item.id ? 'Procesando…' : 'Aprobar' }}</button
-                  ><button
-                    class="reject-button"
-                    (click)="openReject(item)"
+                  <p-button
+                    [label]="busyId() === item.id ? 'Procesando…' : 'Aprobar'"
+                    [ariaLabel]="busyId() === item.id ? 'Procesando…' : 'Aprobar'"
+                    icon="pi pi-check"
+                    [loading]="busyId() === item.id"
                     [disabled]="busyId() !== null"
-                  >
-                    Rechazar
-                  </button>
+                    (onClick)="approve(item)"
+                  /><p-button
+                    label="Rechazar"
+                    ariaLabel="Rechazar"
+                    icon="pi pi-times"
+                    severity="danger"
+                    [outlined]="true"
+                    [disabled]="busyId() !== null"
+                    (onClick)="openReject(item)"
+                  />
                 </div>
               } @else {
                 <p class="decision-label">
@@ -203,66 +278,108 @@
               }
             </article>
           }
+          <p-paginator
+            [first]="first"
+            [rows]="pageSize"
+            [totalRecords]="items().length"
+            [pageLinkSize]="3"
+            [showFirstLastIcon]="false"
+            (onPageChange)="pageChanged($event)"
+          />
         </div>
       }
     </div>
   </section>
-  <footer>Las decisiones son definitivas. Verifica los datos antes de aprobar o rechazar.</footer>
+  <footer>
+    <i class="pi pi-info-circle" aria-hidden="true"></i
+    ><span
+      >Verifica los datos antes de decidir. Una vez aprobada o rechazada, la solicitud no puede
+      modificarse.</span
+    >
+  </footer>
 </main>
 
-<dialog
-  #rejectionDialog
-  aria-labelledby="dialog-title"
-  aria-describedby="dialog-description"
-  (cancel)="cancelDialog($event)"
+<p-dialog
+  [header]="'Rechazar solicitud #' + selected?.id"
+  [visible]="dialogVisible"
+  (visibleChange)="dialogVisibilityChanged($event)"
+  (onShow)="focusReason()"
+  (onHide)="restoreDialogFocus()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [blockScroll]="true"
+  [focusTrap]="true"
+  [closeOnEscape]="busyId() === null"
+  [closable]="busyId() === null"
+  [dismissableMask]="false"
+  closeAriaLabel="Cerrar diálogo"
+  [style]="{ width: '480px', maxWidth: 'calc(100vw - 32px)' }"
+  styleClass="rejection-dialog"
+  appendTo="body"
 >
-  <form (ngSubmit)="reject()" novalidate>
-    <div class="dialog-heading">
-      <span class="eyebrow">REVISIÓN DE SOLICITUD</span
-      ><button
-        type="button"
-        class="close-button"
-        aria-label="Cerrar diálogo"
-        [disabled]="busyId() !== null"
-        (click)="closeDialog()"
+  <div class="dialog-intro">
+    <span class="dialog-icon" aria-hidden="true"><i class="pi pi-file-excel"></i></span>
+    <p>Comparte un motivo claro para que el colaborador entienda la decisión.</p>
+  </div>
+  @if (selected; as item) {
+    <div class="request-context">
+      <div>
+        <span class="context-label">COLABORADOR</span><strong>{{ item.employeeName }}</strong
+        ><span class="context-category">{{ item.category }} · Solicitud #{{ item.id }}</span>
+      </div>
+      <span class="context-amount"
+        ><app-monetary-value [value]="item.amountDisplay" /><small>COP</small></span
       >
-        ×
-      </button>
     </div>
-    <h2 id="dialog-title">Rechazar solicitud #{{ selected?.id }}</h2>
-    <p id="dialog-description">
-      Explica el motivo para que {{ selected?.employeeName }} pueda entender la decisión.
-    </p>
-    @if (dialogError) {
-      <p class="field-error" role="alert">{{ dialogError }}</p>
-    }
-    <label for="rejection-reason">Motivo del rechazo <span>(obligatorio)</span></label>
-    <textarea
+  }
+  <form (ngSubmit)="reject()" novalidate>
+    <label for="rejection-reason">Motivo del rechazo <span>(obligatorio)</span></label
+    ><textarea
+      #reasonInput
+      pTextarea
       id="rejection-reason"
       name="reason"
       rows="5"
       maxlength="500"
       [(ngModel)]="reason"
       [disabled]="busyId() !== null"
+      [invalid]="!!reasonError"
       [attr.aria-invalid]="!!reasonError"
       aria-describedby="reason-help reason-error"
-      autofocus
+      placeholder="Ej.: El gasto no corresponde a la actividad indicada."
     ></textarea>
-    <p id="reason-help" class="field-help">
-      Escribe un motivo claro. {{ reason.length }}/500 caracteres.
-    </p>
-    <p id="reason-error" class="field-error" role="alert">{{ reasonError }}</p>
-    <div class="dialog-actions">
-      <button
-        type="button"
-        class="secondary"
-        [disabled]="busyId() !== null"
-        (click)="closeDialog()"
-      >
-        Cancelar</button
-      ><button type="submit" class="danger" [disabled]="busyId() !== null">
-        {{ busyId() !== null ? 'Enviando…' : 'Confirmar rechazo' }}
-      </button>
+    <div class="field-caption">
+      <span id="reason-help">Este mensaje será visible para el colaborador.</span
+      ><span>{{ reason.length }}/500</span>
     </div>
+    <p id="reason-error" class="field-error" role="alert">{{ reasonError }}</p>
+    @if (dialogError) {
+      <p class="field-error" role="alert">{{ dialogError }}</p>
+    }
   </form>
-</dialog>
+  <ng-template #footer
+    ><div class="dialog-footer">
+      <p class="decision-warning">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>Esta decisión es definitiva.
+      </p>
+      <div class="dialog-actions">
+        <p-button
+          label="Cancelar"
+          ariaLabel="Cancelar"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="busyId() !== null"
+          (onClick)="closeDialog()"
+        /><p-button
+          [label]="busyId() !== null ? 'Enviando…' : 'Confirmar rechazo'"
+          [ariaLabel]="busyId() !== null ? 'Enviando…' : 'Confirmar rechazo'"
+          icon="pi pi-times"
+          severity="danger"
+          [loading]="busyId() !== null"
+          [disabled]="busyId() !== null"
+          (onClick)="reject()"
+        />
+      </div></div
+  ></ng-template>
+</p-dialog>

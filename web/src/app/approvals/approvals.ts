@@ -10,6 +10,15 @@ import {
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MessageService } from 'primeng/api';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { PaginatorModule, PaginatorState } from 'primeng/paginator';
 import {
   ApiFailure,
   Reimbursement,
@@ -18,33 +27,69 @@ import {
 } from '../models/reimbursement';
 import { ReimbursementApi } from '../services/reimbursement-api';
 import { MonetaryValue } from './monetary-value';
+import { ExpenseDescription } from './expense-description';
 
 @Component({
   selector: 'app-approvals',
-  imports: [FormsModule, DatePipe, MonetaryValue],
+  imports: [
+    FormsModule,
+    DatePipe,
+    MonetaryValue,
+    ExpenseDescription,
+    ButtonModule,
+    DialogModule,
+    SelectModule,
+    TableModule,
+    TagModule,
+    TextareaModule,
+    ProgressSpinnerModule,
+    PaginatorModule,
+  ],
   templateUrl: './approvals.html',
   styleUrl: './approvals.scss',
 })
 export class Approvals implements OnInit {
   private readonly api = inject(ReimbursementApi);
+  private readonly messages = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
   private generation = 0;
   private dialogTrigger: HTMLElement | null = null;
-  @ViewChild('rejectionDialog') dialog!: ElementRef<HTMLDialogElement>;
-  readonly statuses = Object.values(ReimbursementStatus);
+  @ViewChild('reasonInput') reasonInput?: ElementRef<HTMLTextAreaElement>;
+  readonly statusOptions = [
+    { label: 'Todos los estados', value: null },
+    ...Object.values(ReimbursementStatus).map((value) => ({ label: statusLabels[value], value })),
+  ];
   readonly statusLabels = statusLabels;
   readonly pending = ReimbursementStatus.Pending;
   readonly items = signal<Reimbursement[]>([]);
   readonly loading = signal(false);
   readonly busyId = signal<number | null>(null);
   readonly error = signal('');
-  readonly notice = signal('');
   readonly traceId = signal('');
   statusFilter: ReimbursementStatus | null = ReimbursementStatus.Pending;
   selected: Reimbursement | null = null;
+  dialogVisible = false;
   reason = '';
   reasonError = '';
   dialogError = '';
+  first = 0;
+  pageSize = 8;
+
+  get pagedItems(): Reimbursement[] {
+    return this.items().slice(this.first, this.first + this.pageSize);
+  }
+  get resultTitle(): string {
+    switch (this.statusFilter) {
+      case ReimbursementStatus.Pending:
+        return 'Por revisar';
+      case ReimbursementStatus.Approved:
+        return 'Solicitudes aprobadas';
+      case ReimbursementStatus.Rejected:
+        return 'Solicitudes rechazadas';
+      default:
+        return 'Todas las solicitudes';
+    }
+  }
 
   ngOnInit(): void {
     this.load();
@@ -56,6 +101,7 @@ export class Approvals implements OnInit {
     this.error.set('');
     this.traceId.set('');
     this.items.set([]);
+    this.first = 0;
     this.api
       .list(this.statusFilter)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -70,35 +116,78 @@ export class Approvals implements OnInit {
           this.error.set(error.message);
           this.traceId.set(error.traceId);
           this.loading.set(false);
+          this.notify('error', 'No pudimos cargar las solicitudes', error.message);
         },
       });
   }
 
   filterChanged(): void {
-    this.notice.set('');
     this.load();
+  }
+
+  pageChanged(event: PaginatorState): void {
+    this.first = event.first ?? 0;
+    this.pageSize = event.rows ?? 8;
+  }
+
+  initials(name: string): string {
+    return name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
+  }
+
+  statusSeverity(status: ReimbursementStatus): 'warn' | 'success' | 'danger' {
+    return status === ReimbursementStatus.Pending
+      ? 'warn'
+      : status === ReimbursementStatus.Approved
+        ? 'success'
+        : 'danger';
+  }
+
+  statusLabel(status: ReimbursementStatus): string {
+    return statusLabels[status];
+  }
+
+  categoryIcon(category: string): string {
+    const icons: Record<string, string> = {
+      Transporte: 'pi-car',
+      Alimentación: 'pi-shop',
+      Alojamiento: 'pi-building',
+      Papelería: 'pi-file',
+    };
+    return icons[category] ?? 'pi-receipt';
   }
 
   openReject(item: Reimbursement): void {
     if (this.busyId() !== null) return;
+    this.messages.clear();
     this.dialogTrigger = document.activeElement as HTMLElement;
     this.selected = item;
     this.reason = '';
     this.reasonError = '';
     this.dialogError = '';
-    this.dialog.nativeElement.showModal();
+    this.dialogVisible = true;
+  }
+
+  focusReason(): void {
+    this.reasonInput?.nativeElement.focus();
   }
 
   closeDialog(): void {
-    if (this.busyId() !== null) return;
-    this.dialog.nativeElement.close();
-    this.selected = null;
-    this.dialogTrigger?.focus();
+    if (this.busyId() === null) this.dialogVisible = false;
   }
 
-  cancelDialog(event: Event): void {
-    event.preventDefault();
-    this.closeDialog();
+  dialogVisibilityChanged(visible: boolean): void {
+    if (this.busyId() === null) this.dialogVisible = visible;
+  }
+
+  restoreDialogFocus(): void {
+    this.selected = null;
+    if (this.dialogTrigger?.isConnected) this.dialogTrigger.focus();
   }
 
   reject(): void {
@@ -109,7 +198,10 @@ export class Approvals implements OnInit {
       : trimmed.length > 500
         ? 'El motivo no puede superar los 500 caracteres.'
         : '';
-    if (this.reasonError) return;
+    if (this.reasonError) {
+      this.focusReason();
+      return;
+    }
     this.decide(this.selected, trimmed);
   }
 
@@ -117,11 +209,14 @@ export class Approvals implements OnInit {
     this.decide(item);
   }
 
+  private notify(severity: 'success' | 'info' | 'error', summary: string, detail: string): void {
+    this.messages.clear();
+    this.messages.add({ severity, summary, detail, life: severity === 'success' ? 6000 : 8000 });
+  }
+
   private decide(item: Reimbursement, reason?: string): void {
     if (this.busyId() !== null) return;
     this.busyId.set(item.id);
-    this.notice.set('');
-    this.error.set('');
     this.dialogError = '';
     const request =
       reason === undefined ? this.api.approve(item.id) : this.api.reject(item.id, reason);
@@ -129,7 +224,9 @@ export class Approvals implements OnInit {
       next: () => {
         this.busyId.set(null);
         if (reason !== undefined) this.closeDialog();
-        this.notice.set(
+        this.notify(
+          'success',
+          reason === undefined ? 'Reembolso aprobado' : 'Solicitud rechazada',
           `Solicitud #${item.id} ${reason === undefined ? 'aprobada' : 'rechazada'} correctamente.`,
         );
         this.load();
@@ -138,16 +235,19 @@ export class Approvals implements OnInit {
         this.busyId.set(null);
         if (error.status === 409) {
           this.closeDialog();
-          this.notice.set(
+          this.notify(
+            'info',
+            'La solicitud ya fue resuelta',
             'Esta solicitud ya fue resuelta. Actualizamos la lista para mostrar su estado actual.',
           );
           this.load();
-        } else if (reason !== undefined) {
-          this.reasonError = error.errors.find((field) => field.field === 'reason')?.message ?? '';
-          this.dialogError = error.message;
         } else {
-          this.error.set(error.message);
-          this.traceId.set(error.traceId);
+          if (reason !== undefined) {
+            this.reasonError =
+              error.errors.find((field) => field.field === 'reason')?.message ?? '';
+            this.dialogError = error.message;
+          }
+          this.notify('error', 'No pudimos guardar la decisión', error.message);
         }
       },
     });
