@@ -23,3 +23,5 @@ artifacts/
 *.aab
 *.mdf
 *.ldf
+__pycache__/
+*.pyc
