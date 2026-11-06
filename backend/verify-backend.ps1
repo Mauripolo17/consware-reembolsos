@@ -41,7 +41,7 @@ foreach ($body in @('{}','{"employeeName":" ","category":" ","description":" "}'
 }
 $r = Send POST $base (@{ employeeName = 'x' * 101; category = 'x' * 61; description = 'x' * 501; amount = 1 } | ConvertTo-Json)
 Check ($r.Status -eq 400 -and $r.Json.errors.Count -eq 3) 'all long fields'
-foreach ($path in @('?status=pending','?status=','/0','/abc')) { $r = Send GET "$base$path"; Check ($r.Status -eq 400) "bad filter/id $path" }
+foreach ($path in @('?status=pending','?status=','?status=0','?status=1','?status=Unknown','/0','/abc')) { $r = Send GET "$base$path"; Check ($r.Status -eq 400) "bad filter/id $path" }
 foreach ($url in @("$base/2147483647",'http://127.0.0.1:5000/api/missing')) { $r = Send GET $url; Check ($r.Status -eq 404) '404' }
 $r = Send DELETE $base; Check ($r.Status -eq 405 -and $r.Json.errors[0].code -eq 'METHOD_NOT_ALLOWED') '405'
 $r = Send POST $base 'test' 'text/plain'; Check ($r.Status -eq 415 -and $r.Json.errors[0].code -eq 'UNSUPPORTED_MEDIA_TYPE') '415'

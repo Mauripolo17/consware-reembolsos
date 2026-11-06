@@ -7,7 +7,7 @@ public sealed class Reimbursement
     public decimal Amount { get; set; }
     public string Category { get; set; } = "";
     public string Description { get; set; } = "";
-    public string Status { get; set; } = "Pending";
+    public ReimbursementStatus Status { get; set; } = ReimbursementStatus.Pending;
     public string? RejectionReason { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? DecidedAtUtc { get; set; }

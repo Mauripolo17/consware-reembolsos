@@ -13,7 +13,7 @@ public sealed class ReimbursementDbContext(DbContextOptions<ReimbursementDbConte
         e.Property(x => x.Category).HasMaxLength(60).IsRequired();
         e.Property(x => x.Description).HasMaxLength(500).IsRequired();
         e.Property(x => x.Amount).HasPrecision(18, 2);
-        e.Property(x => x.Status).HasMaxLength(8).IsRequired();
+        e.Property(x => x.Status).HasConversion<string>().HasMaxLength(8).IsRequired();
         e.Property(x => x.RejectionReason).HasMaxLength(500);
         e.HasIndex(x => x.Status);
         e.HasIndex(x => x.EmployeeName);

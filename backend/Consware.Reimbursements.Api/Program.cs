@@ -1,6 +1,7 @@
 using Consware.Reimbursements.Api.Contracts;
 using Consware.Reimbursements.Api.Data;
 using Consware.Reimbursements.Api.Services;
+using Consware.Reimbursements.Api.Middleware;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ReimbursementDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Reimbursements")));
 builder.Services.AddScoped<ReimbursementService>();
+builder.Services.AddScoped<IReimbursementMapper, ReimbursementMapper>();
 
 builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
 {
@@ -62,22 +64,7 @@ builder.Services.AddSwaggerGen(o =>
 
 var app = builder.Build();
 
-app.Use(async (c, next) =>
-{
-    try
-    {
-        await next();
-    }
-    catch (Exception ex) when (!c.Response.HasStarted)
-    {
-        app.Logger.LogError(ex, "Request failed: {TraceId}", c.TraceIdentifier);
-        c.Response.Clear();
-        c.Response.StatusCode = 500;
-        await c.Response.WriteAsJsonAsync(Responses.Fail(
-            c,
-            new ApiError(null, "INTERNAL_ERROR", "Ocurrió un error inesperado. Intenta nuevamente.")));
-    }
-});
+app.UseMiddleware<ApiExceptionMiddleware>();
 
 app.UseStatusCodePages(async s =>
 {
