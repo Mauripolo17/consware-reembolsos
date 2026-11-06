@@ -1,0 +1,268 @@
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="Consware, inicio"
+      ><span class="brand-mark" aria-hidden="true">C</span
+      ><span>Consware<small>Reembolsos</small></span></a
+    ><span class="role-label">Portal del aprobador</span>
+  </div>
+</header>
+<main>
+  <section class="page-heading" aria-labelledby="page-title">
+    <div>
+      <p class="eyebrow">GESTIÓN DE GASTOS</p>
+      <h1 id="page-title">Solicitudes de reembolso</h1>
+      <p class="intro">Revisa cada gasto y acompaña a tu equipo con una respuesta clara.</p>
+    </div>
+    <span class="policy-note">Hasta $500.000 COP<br /><strong>Aprobación automática</strong></span>
+  </section>
+
+  @if (notice()) {
+    <div class="notice" role="status">
+      <span>{{ notice() }}</span
+      ><button class="text-button" (click)="notice.set('')" aria-label="Cerrar aviso">
+        Cerrar
+      </button>
+    </div>
+  }
+
+  <section class="workspace" aria-label="Solicitudes">
+    <div class="toolbar">
+      <div class="filter">
+        <label for="status-filter">Estado de la solicitud</label
+        ><select
+          id="status-filter"
+          [(ngModel)]="statusFilter"
+          (ngModelChange)="filterChanged()"
+          [disabled]="busyId() !== null"
+        >
+          <option [ngValue]="null">Todos los estados</option>
+          @for (status of statuses; track status) {
+            <option [ngValue]="status">{{ statusLabels[status] }}</option>
+          }
+        </select>
+      </div>
+      <button
+        class="secondary refresh"
+        (click)="load()"
+        [disabled]="loading() || busyId() !== null"
+      >
+        <span aria-hidden="true">↻</span> Actualizar
+      </button>
+    </div>
+
+    @if (error()) {
+      <div class="error-panel" role="alert">
+        <h2>No pudimos completar la operación</h2>
+        <p>{{ error() }}</p>
+        @if (traceId()) {
+          <p class="reference">Referencia: {{ traceId() }}</p>
+        }
+        <button class="secondary" (click)="load()" [disabled]="loading()">
+          Reintentar consulta
+        </button>
+      </div>
+    }
+    <div [attr.aria-busy]="loading()">
+      @if (loading()) {
+        <div class="state-panel" role="status">
+          <span class="spinner" aria-hidden="true"></span>
+          <h2>Cargando solicitudes</h2>
+          <p>Estamos consultando los gastos de tu equipo.</p>
+        </div>
+      } @else if (!error() && items().length === 0) {
+        <div class="state-panel">
+          <span class="empty-icon" aria-hidden="true">✓</span>
+          <h2>
+            {{
+              statusFilter === pending
+                ? 'No hay solicitudes pendientes'
+                : 'No hay solicitudes en este estado'
+            }}
+          </h2>
+          <p>
+            {{
+              statusFilter === pending
+                ? 'Todo está al día. Puedes consultar otros estados o actualizar la lista.'
+                : 'Selecciona otro estado para consultar las solicitudes.'
+            }}
+          </p>
+        </div>
+      } @else if (items().length > 0) {
+        <div class="results-heading">
+          <h2>{{ statusFilter ? statusLabels[statusFilter] + 's' : 'Todas las solicitudes' }}</h2>
+          <span
+            >{{ items().length }} {{ items().length === 1 ? 'solicitud' : 'solicitudes' }} · Más
+            recientes primero</span
+          >
+        </div>
+        <div class="desktop-table">
+          <table>
+            <caption class="sr-only">
+              Solicitudes de reembolso ordenadas de la más reciente a la más antigua
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Colaborador y gasto</th>
+                <th scope="col">Monto</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Revisión</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of items(); track item.id) {
+                <tr [attr.data-id]="item.id">
+                  <td>
+                    <span class="record-meta">#{{ item.id }} · {{ item.category }}</span>
+                    <h3>{{ item.employeeName }}</h3>
+                    <p class="description">{{ item.description }}</p>
+                    <time>{{ item.createdAtUtc | date: 'dd/MM/yyyy · HH:mm' }}</time>
+                    @if (item.rejectionReason) {
+                      <p class="rejection-reason">
+                        <strong>Motivo del rechazo:</strong> {{ item.rejectionReason }}
+                      </p>
+                    }
+                  </td>
+                  <td class="amount">
+                    <app-monetary-value [value]="item.amountDisplay" /><small>COP</small>
+                  </td>
+                  <td>
+                    <span class="badge" [attr.data-status]="item.status">{{
+                      statusLabels[item.status]
+                    }}</span>
+                  </td>
+                  <td>
+                    @if (item.status === pending) {
+                      <div class="actions">
+                        <button
+                          class="primary"
+                          (click)="approve(item)"
+                          [disabled]="busyId() !== null"
+                        >
+                          {{ busyId() === item.id ? 'Procesando…' : 'Aprobar' }}</button
+                        ><button
+                          class="reject-button"
+                          (click)="openReject(item)"
+                          [disabled]="busyId() !== null"
+                        >
+                          Rechazar
+                        </button>
+                      </div>
+                    } @else {
+                      <span class="decision-label"
+                        >Resuelta<time>{{
+                          item.decidedAtUtc | date: 'dd/MM/yyyy · HH:mm'
+                        }}</time></span
+                      >
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="request-cards">
+          @for (item of items(); track item.id) {
+            <article
+              class="request-card"
+              [attr.data-id]="item.id"
+              [attr.aria-label]="'Solicitud ' + item.id"
+            >
+              <div class="card-top">
+                <span class="record-meta">#{{ item.id }} · {{ item.category }}</span
+                ><span class="badge" [attr.data-status]="item.status">{{
+                  statusLabels[item.status]
+                }}</span>
+              </div>
+              <h3>{{ item.employeeName }}</h3>
+              <p class="amount">
+                <app-monetary-value [value]="item.amountDisplay" /> <small>COP</small>
+              </p>
+              <p class="description">{{ item.description }}</p>
+              <time>Registrada: {{ item.createdAtUtc | date: 'dd/MM/yyyy · HH:mm' }}</time>
+              @if (item.rejectionReason) {
+                <p class="rejection-reason">
+                  <strong>Motivo del rechazo:</strong> {{ item.rejectionReason }}
+                </p>
+              }
+              @if (item.status === pending) {
+                <div class="actions">
+                  <button class="primary" (click)="approve(item)" [disabled]="busyId() !== null">
+                    {{ busyId() === item.id ? 'Procesando…' : 'Aprobar' }}</button
+                  ><button
+                    class="reject-button"
+                    (click)="openReject(item)"
+                    [disabled]="busyId() !== null"
+                  >
+                    Rechazar
+                  </button>
+                </div>
+              } @else {
+                <p class="decision-label">
+                  Resuelta: {{ item.decidedAtUtc | date: 'dd/MM/yyyy · HH:mm' }}
+                </p>
+              }
+            </article>
+          }
+        </div>
+      }
+    </div>
+  </section>
+  <footer>Las decisiones son definitivas. Verifica los datos antes de aprobar o rechazar.</footer>
+</main>
+
+<dialog
+  #rejectionDialog
+  aria-labelledby="dialog-title"
+  aria-describedby="dialog-description"
+  (cancel)="cancelDialog($event)"
+>
+  <form (ngSubmit)="reject()" novalidate>
+    <div class="dialog-heading">
+      <span class="eyebrow">REVISIÓN DE SOLICITUD</span
+      ><button
+        type="button"
+        class="close-button"
+        aria-label="Cerrar diálogo"
+        [disabled]="busyId() !== null"
+        (click)="closeDialog()"
+      >
+        ×
+      </button>
+    </div>
+    <h2 id="dialog-title">Rechazar solicitud #{{ selected?.id }}</h2>
+    <p id="dialog-description">
+      Explica el motivo para que {{ selected?.employeeName }} pueda entender la decisión.
+    </p>
+    @if (dialogError) {
+      <p class="field-error" role="alert">{{ dialogError }}</p>
+    }
+    <label for="rejection-reason">Motivo del rechazo <span>(obligatorio)</span></label>
+    <textarea
+      id="rejection-reason"
+      name="reason"
+      rows="5"
+      maxlength="500"
+      [(ngModel)]="reason"
+      [disabled]="busyId() !== null"
+      [attr.aria-invalid]="!!reasonError"
+      aria-describedby="reason-help reason-error"
+      autofocus
+    ></textarea>
+    <p id="reason-help" class="field-help">
+      Escribe un motivo claro. {{ reason.length }}/500 caracteres.
+    </p>
+    <p id="reason-error" class="field-error" role="alert">{{ reasonError }}</p>
+    <div class="dialog-actions">
+      <button
+        type="button"
+        class="secondary"
+        [disabled]="busyId() !== null"
+        (click)="closeDialog()"
+      >
+        Cancelar</button
+      ><button type="submit" class="danger" [disabled]="busyId() !== null">
+        {{ busyId() !== null ? 'Enviando…' : 'Confirmar rechazo' }}
+      </button>
+    </div>
+  </form>
+</dialog>
