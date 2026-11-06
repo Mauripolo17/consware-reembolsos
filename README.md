@@ -4,7 +4,7 @@ Sistema de solicitudes de reembolso con API ASP.NET, persistencia SQL Server, ap
 
 ## Estado de la entrega
 
-La API cuenta con aceptación HTTP y persistencia verificadas. Flutter Web consume la API real; la verificación Android está en curso y Angular se integra después. Los resultados comprobados están en [docs/test-results.md](docs/test-results.md).
+La API cuenta con aceptación HTTP y persistencia verificadas. Flutter está comprobado contra esa API en navegador y Android, con selector de estado y diez pruebas automatizadas aprobadas. Angular permite filtrar, aprobar y rechazar, con aceptación funcional automatizada; su presentación está en renovación con PrimeNG. Los resultados comprobados están en [docs/test-results.md](docs/test-results.md).
 
 ## Reglas de negocio
 
@@ -23,7 +23,7 @@ El contrato compartido está en [docs/api-contract.md](docs/api-contract.md): to
 
 - Windows con .NET SDK 8 y SQL Server accesible. En el equipo de desarrollo se comprobó `Server=localhost` con autenticación integrada y permiso para crear la base.
 - Node.js 22.12; Angular utiliza CLI local 21, independiente del CLI global.
-- Flutter estable; para Android se requiere además JDK, SDK Android y emulador o dispositivo.
+- Flutter 3.47.9 con Dart 3.13.7, versiones utilizadas para compilar y comprobar la app. Para Android se requiere además JDK 17, SDK Android y emulador o dispositivo; se verificó un emulador API 35.
 - PowerShell 7.5 o superior para los scripts de aceptación (se utilizó 7.6.7).
 
 ## Preparar y ejecutar la API
@@ -85,9 +85,44 @@ pwsh -File scripts/start.ps1 mobile-android -Device emulator-5554
 
 La URL de API es configurable con `-ApiBaseUrl`. En navegador se utiliza `http://localhost:5000`; el emulador Android accede al equipo mediante `http://10.0.2.2:5000`. El script admite `-FlutterPath` si Flutter no está en PATH. La configuración de HTTP sin cifrar se limita al desarrollo Android.
 
+Para verificar Flutter:
+
+```powershell
+cd mobile
+flutter analyze
+flutter test
+```
+
+## Ejecutar Angular
+
+Con la API iniciada, instalar dependencias y arrancar el panel en otra terminal:
+
+```powershell
+cd web
+npm ci
+cd ..
+pwsh -File scripts/start.ps1 web
+```
+
+El panel abre en `http://localhost:4200`. La URL de API se configura en `web/src/environments/environment.ts`. El filtro comienza en Pendientes y las decisiones se envían a la API real.
+
+```powershell
+cd web
+npm run build
+
+# Requiere API, Angular en el puerto 4200 y Microsoft Edge instalado
+npm test
+```
+
+La suite de Playwright crea registros de prueba identificables y conserva los datos. Comprueba decisiones, conflictos, estados de recuperación y tamaños de pantalla. La salida de producción se genera en `web/dist/consware-approvals/browser/`. Más detalle en [web/README.md](web/README.md).
+
 ## Decisiones y límites
 
 Se conserva una arquitectura pequeña y una identidad fija `Empleado Demo`, sin autenticación, adjuntos, microservicios ni despliegue. La interfaz usa azules claros y superficies de cristal, controles táctiles y anchos máximos según la pantalla. Un sistema de producción necesitaría autorización, auditoría, comprobantes y gestión real de empleados.
+
+La API usa `decimal(18,2)`. Angular conserva el rango completo sin convertir los importes a números binarios de JavaScript; Flutter limita el formulario a 9999999999.99 COP para preservar los centavos. Ambos clientes presentan los estados en español y usan los valores del enum en el contrato.
+
+Las direcciones, CORS y HTTP sin cifrar están configurados para desarrollo local. En un teléfono físico se debe configurar una URL de API accesible desde su red. Como mejoras posteriores quedan la autenticación por roles, paginación en servidor y un registro de auditoría; no forman parte de esta entrega.
 
 ## Uso de IA
 

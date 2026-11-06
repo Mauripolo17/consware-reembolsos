@@ -26,7 +26,7 @@ artifacts/
 __pycache__/
 *.pyc
 
-# Private local agent workflow and interview preparation
+# Local development tools and notes
 /AGENTS.md
 /.agents/
 /docs/tasks/
@@ -34,6 +34,7 @@ __pycache__/
 /backend/IMPLEMENTATION.md
 /mobile/IMPLEMENTATION.md
 /mobile/ENVIRONMENT.md
+/mobile/README.md
 /web/IMPLEMENTATION.md
 /scripts/configure-mcp.py
 /scripts/verify-mcp.py
