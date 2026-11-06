@@ -128,6 +128,7 @@
       } @else {
         <div class="desktop-table">
           <p-table
+            [pt]="{ table: { 'aria-label': 'Solicitudes de reembolso' } }"
             [value]="items()"
             dataKey="id"
             [paginator]="true"
@@ -190,19 +191,23 @@
                   @if (item.status === pending) {
                     <div class="actions">
                       <p-button
-                        [label]="busyId() === item.id ? 'Procesando…' : 'Aprobar'"
-                        [ariaLabel]="busyId() === item.id ? 'Procesando…' : 'Aprobar'"
                         icon="pi pi-check"
+                        ariaLabel="Aprobar"
+                        pTooltip="Aprobar"
+                        tooltipPosition="top"
                         [loading]="busyId() === item.id"
                         [disabled]="busyId() !== null"
+                        styleClass="decision-icon approve-icon"
                         (onClick)="approve(item)"
                       /><p-button
-                        label="Rechazar"
-                        ariaLabel="Rechazar"
                         icon="pi pi-times"
+                        ariaLabel="Rechazar"
+                        pTooltip="Rechazar"
+                        tooltipPosition="top"
                         severity="danger"
                         [outlined]="true"
                         [disabled]="busyId() !== null"
+                        styleClass="decision-icon reject-icon"
                         (onClick)="openReject(item)"
                       />
                     </div>
@@ -255,19 +260,23 @@
               @if (item.status === pending) {
                 <div class="actions">
                   <p-button
-                    [label]="busyId() === item.id ? 'Procesando…' : 'Aprobar'"
-                    [ariaLabel]="busyId() === item.id ? 'Procesando…' : 'Aprobar'"
                     icon="pi pi-check"
+                    ariaLabel="Aprobar"
+                    pTooltip="Aprobar"
+                    tooltipPosition="top"
                     [loading]="busyId() === item.id"
                     [disabled]="busyId() !== null"
+                    styleClass="decision-icon approve-icon"
                     (onClick)="approve(item)"
                   /><p-button
-                    label="Rechazar"
-                    ariaLabel="Rechazar"
                     icon="pi pi-times"
+                    ariaLabel="Rechazar"
+                    pTooltip="Rechazar"
+                    tooltipPosition="top"
                     severity="danger"
                     [outlined]="true"
                     [disabled]="busyId() !== null"
+                    styleClass="decision-icon reject-icon"
                     (onClick)="openReject(item)"
                   />
                 </div>
@@ -300,27 +309,55 @@
 </main>
 
 <p-dialog
-  [header]="'Rechazar solicitud #' + selected?.id"
+  [header]="dialogTitle"
   [visible]="dialogVisible"
   (visibleChange)="dialogVisibilityChanged($event)"
-  (onShow)="focusReason()"
+  (onShow)="focusDialog()"
   (onHide)="restoreDialogFocus()"
   [modal]="true"
   [draggable]="false"
   [resizable]="false"
   [blockScroll]="true"
   [focusTrap]="true"
-  [closeOnEscape]="busyId() === null"
-  [closable]="busyId() === null"
+  [closeOnEscape]="false"
+  [closable]="false"
   [dismissableMask]="false"
-  closeAriaLabel="Cerrar diálogo"
   [style]="{ width: '480px', maxWidth: 'calc(100vw - 32px)' }"
+  [pt]="{ root: { 'aria-labelledby': 'decision-dialog-title' } }"
   styleClass="rejection-dialog"
   appendTo="body"
 >
+  <ng-template #header
+    ><div class="dialog-titlebar">
+      <h2 id="decision-dialog-title">{{ dialogTitle }}</h2>
+      <p-button
+        icon="pi pi-times"
+        ariaLabel="Cerrar diálogo"
+        [text]="true"
+        severity="secondary"
+        [disabled]="busyId() !== null"
+        styleClass="dialog-close-icon"
+        (onClick)="cancelDecision()"
+      /></div
+  ></ng-template>
   <div class="dialog-intro">
-    <span class="dialog-icon" aria-hidden="true"><i class="pi pi-file-excel"></i></span>
-    <p>Comparte un motivo claro para que el colaborador entienda la decisión.</p>
+    <span
+      class="dialog-icon"
+      [class.approval-icon]="decisionStep === 'confirmApproval'"
+      aria-hidden="true"
+      ><i
+        [class]="decisionStep === 'confirmApproval' ? 'pi pi-check-circle' : 'pi pi-file-excel'"
+      ></i
+    ></span>
+    <p>
+      {{
+        decisionStep === 'reason'
+          ? 'Comparte un motivo claro para que el colaborador entienda la decisión.'
+          : decisionStep === 'confirmApproval'
+            ? 'Revisa los datos antes de aprobar este reembolso.'
+            : 'Revisa el motivo que recibirá el colaborador antes de confirmar.'
+      }}
+    </p>
   </div>
   @if (selected; as item) {
     <div class="request-context">
@@ -333,53 +370,97 @@
       >
     </div>
   }
-  <form (ngSubmit)="reject()" novalidate>
-    <label for="rejection-reason">Motivo del rechazo <span>(obligatorio)</span></label
-    ><textarea
-      #reasonInput
-      pTextarea
-      id="rejection-reason"
-      name="reason"
-      rows="5"
-      maxlength="500"
-      [(ngModel)]="reason"
-      [disabled]="busyId() !== null"
-      [invalid]="!!reasonError"
-      [attr.aria-invalid]="!!reasonError"
-      aria-describedby="reason-help reason-error"
-      placeholder="Ej.: El gasto no corresponde a la actividad indicada."
-    ></textarea>
-    <div class="field-caption">
-      <span id="reason-help">Este mensaje será visible para el colaborador.</span
-      ><span>{{ reason.length }}/500</span>
-    </div>
-    <p id="reason-error" class="field-error" role="alert">{{ reasonError }}</p>
-    @if (dialogError) {
-      <p class="field-error" role="alert">{{ dialogError }}</p>
+  @if (decisionStep === 'reason') {
+    <form (ngSubmit)="reject()" novalidate>
+      <label for="rejection-reason">Motivo del rechazo <span>(obligatorio)</span></label
+      ><textarea
+        #reasonInput
+        pTextarea
+        id="rejection-reason"
+        name="reason"
+        rows="5"
+        maxlength="500"
+        [(ngModel)]="reason"
+        [disabled]="busyId() !== null"
+        [invalid]="!!reasonError"
+        [attr.aria-invalid]="!!reasonError"
+        aria-describedby="reason-help reason-error"
+        placeholder="Ej.: El gasto no corresponde a la actividad indicada."
+      ></textarea>
+      <div class="field-caption">
+        <span id="reason-help">Este mensaje será visible para el colaborador.</span
+        ><span>{{ reason.length }}/500</span>
+      </div>
+      <p id="reason-error" class="field-error" role="alert">{{ reasonError }}</p>
+    </form>
+  } @else {
+    @if (decisionStep === 'confirmRejection') {
+      <div class="confirmation-reason">
+        <span>MOTIVO DEL RECHAZO</span>
+        <p>{{ confirmedReason }}</p>
+      </div>
     }
-  </form>
+    <p class="confirmation-note">
+      <i class="pi pi-lock" aria-hidden="true"></i
+      ><span
+        >La solicitud quedará {{ decisionStep === 'confirmApproval' ? 'aprobada' : 'rechazada' }}.
+        Esta decisión es definitiva y no se puede deshacer.</span
+      >
+    </p>
+  }
+  @if (dialogError) {
+    <p class="field-error" role="alert">{{ dialogError }}</p>
+  }
   <ng-template #footer
     ><div class="dialog-footer">
-      <p class="decision-warning">
-        <i class="pi pi-info-circle" aria-hidden="true"></i>Esta decisión es definitiva.
-      </p>
+      @if (decisionStep === 'reason') {
+        <p class="decision-warning">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>Podrás revisar el motivo antes de
+          confirmar.
+        </p>
+      }
       <div class="dialog-actions">
         <p-button
+          #cancelButton
           label="Cancelar"
           ariaLabel="Cancelar"
           severity="secondary"
           [outlined]="true"
           [disabled]="busyId() !== null"
-          (onClick)="closeDialog()"
-        /><p-button
-          [label]="busyId() !== null ? 'Enviando…' : 'Confirmar rechazo'"
-          [ariaLabel]="busyId() !== null ? 'Enviando…' : 'Confirmar rechazo'"
-          icon="pi pi-times"
-          severity="danger"
-          [loading]="busyId() !== null"
-          [disabled]="busyId() !== null"
-          (onClick)="reject()"
+          (onClick)="cancelDecision()"
         />
+        @if (decisionStep === 'reason') {
+          <p-button
+            label="Revisar rechazo"
+            ariaLabel="Revisar rechazo"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            severity="danger"
+            (onClick)="reject()"
+          />
+        } @else {
+          <p-button
+            [label]="
+              busyId() !== null
+                ? 'Enviando…'
+                : decisionStep === 'confirmApproval'
+                  ? 'Confirmar aprobación'
+                  : 'Confirmar rechazo'
+            "
+            [ariaLabel]="
+              busyId() !== null
+                ? 'Enviando…'
+                : decisionStep === 'confirmApproval'
+                  ? 'Confirmar aprobación'
+                  : 'Confirmar rechazo'
+            "
+            [icon]="decisionStep === 'confirmApproval' ? 'pi pi-check' : 'pi pi-times'"
+            [severity]="decisionStep === 'confirmApproval' ? 'primary' : 'danger'"
+            [loading]="busyId() !== null"
+            [disabled]="busyId() !== null"
+            (onClick)="confirmDecision()"
+          />
+        }
       </div></div
   ></ng-template>
 </p-dialog>

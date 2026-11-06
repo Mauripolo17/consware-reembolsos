@@ -3,6 +3,7 @@ import {
   DestroyRef,
   ElementRef,
   inject,
+  HostListener,
   OnInit,
   signal,
   ViewChild,
@@ -19,6 +20,7 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { PaginatorModule, PaginatorState } from 'primeng/paginator';
+import { TooltipModule } from 'primeng/tooltip';
 import {
   ApiFailure,
   Reimbursement,
@@ -44,6 +46,7 @@ import { ExpenseDescription } from './expense-description';
     TextareaModule,
     ProgressSpinnerModule,
     PaginatorModule,
+    TooltipModule,
   ],
   templateUrl: './approvals.html',
   styleUrl: './approvals.scss',
@@ -55,6 +58,7 @@ export class Approvals implements OnInit {
   private generation = 0;
   private dialogTrigger: HTMLElement | null = null;
   @ViewChild('reasonInput') reasonInput?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('cancelButton', { read: ElementRef }) cancelButton?: ElementRef<HTMLElement>;
   readonly statusOptions = [
     { label: 'Todos los estados', value: null },
     ...Object.values(ReimbursementStatus).map((value) => ({ label: statusLabels[value], value })),
@@ -69,6 +73,8 @@ export class Approvals implements OnInit {
   statusFilter: ReimbursementStatus | null = ReimbursementStatus.Pending;
   selected: Reimbursement | null = null;
   dialogVisible = false;
+  decisionStep: 'reason' | 'confirmApproval' | 'confirmRejection' = 'reason';
+  confirmedReason = '';
   reason = '';
   reasonError = '';
   dialogError = '';
@@ -77,6 +83,11 @@ export class Approvals implements OnInit {
 
   get pagedItems(): Reimbursement[] {
     return this.items().slice(this.first, this.first + this.pageSize);
+  }
+  get dialogTitle(): string {
+    if (this.decisionStep === 'confirmApproval') return 'Confirmar aprobación';
+    if (this.decisionStep === 'confirmRejection') return 'Confirmar rechazo';
+    return `Rechazar solicitud #${this.selected?.id}`;
   }
   get resultTitle(): string {
     switch (this.statusFilter) {
@@ -167,6 +178,7 @@ export class Approvals implements OnInit {
     this.messages.clear();
     this.dialogTrigger = document.activeElement as HTMLElement;
     this.selected = item;
+    this.decisionStep = 'reason';
     this.reason = '';
     this.reasonError = '';
     this.dialogError = '';
@@ -177,8 +189,29 @@ export class Approvals implements OnInit {
     this.reasonInput?.nativeElement.focus();
   }
 
+  focusDialog(): void {
+    if (this.decisionStep === 'reason') this.focusReason();
+    else this.cancelButton?.nativeElement.querySelector('button')?.focus();
+  }
+
   closeDialog(): void {
     if (this.busyId() === null) this.dialogVisible = false;
+  }
+
+  cancelDecision(): void {
+    if (this.busyId() !== null) return;
+    if (this.decisionStep === 'confirmRejection') {
+      this.decisionStep = 'reason';
+      setTimeout(() => this.focusReason());
+    } else this.closeDialog();
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(event: Event): void {
+    if (!this.dialogVisible) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.cancelDecision();
   }
 
   dialogVisibilityChanged(visible: boolean): void {
@@ -202,11 +235,27 @@ export class Approvals implements OnInit {
       this.focusReason();
       return;
     }
-    this.decide(this.selected, trimmed);
+    this.confirmedReason = trimmed;
+    this.decisionStep = 'confirmRejection';
+    setTimeout(() => this.focusDialog());
   }
 
   approve(item: Reimbursement): void {
-    this.decide(item);
+    if (this.busyId() !== null) return;
+    this.messages.clear();
+    this.dialogTrigger = document.activeElement as HTMLElement;
+    this.selected = item;
+    this.decisionStep = 'confirmApproval';
+    this.dialogError = '';
+    this.dialogVisible = true;
+  }
+
+  confirmDecision(): void {
+    if (!this.selected || this.busyId() !== null || this.decisionStep === 'reason') return;
+    this.decide(
+      this.selected,
+      this.decisionStep === 'confirmRejection' ? this.confirmedReason : undefined,
+    );
   }
 
   private notify(severity: 'success' | 'info' | 'error', summary: string, detail: string): void {
@@ -223,7 +272,7 @@ export class Approvals implements OnInit {
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.busyId.set(null);
-        if (reason !== undefined) this.closeDialog();
+        this.closeDialog();
         this.notify(
           'success',
           reason === undefined ? 'Reembolso aprobado' : 'Solicitud rechazada',

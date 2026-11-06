@@ -10,6 +10,11 @@ export async function runAcceptance(page, options = {}) {
   const results = [];
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
+  const decisionRequests = [];
+  page.on('request', (request) => {
+    if (request.method() === 'PATCH' && request.url().includes('/api/reimbursements/'))
+      decisionRequests.push(request.url());
+  });
   const check = (condition, message) => {
     if (!condition) throw new Error(message);
     results.push(message);
@@ -53,6 +58,27 @@ export async function runAcceptance(page, options = {}) {
   check((await filter.innerText()) === 'Pendiente', 'Pending default');
   check(await row(approved.id).isVisible(), 'Real pending fixture visible');
   check((await page.locator('p-table').count()) === 1, 'PrimeNG Table renders real API records');
+  await page.evaluate(() => document.fonts.ready);
+  check(
+    await page.evaluate(
+      () =>
+        document.fonts.check('16px "Inter Variable"') &&
+        getComputedStyle(document.body).fontFamily.includes('Inter Variable'),
+    ),
+    'Locally bundled Inter font is loaded',
+  );
+  check(
+    await page.locator('h1').evaluate((e) => getComputedStyle(e).fontWeight === '600'),
+    'Heading uses refined 600 weight',
+  );
+  check(
+    await page.getByRole('table', { name: 'Solicitudes de reembolso', exact: true }).isVisible(),
+    'PrimeNG table has a Spanish accessible name',
+  );
+  check(
+    (await page.getByRole('button', { name: 'Abrir selector', exact: true }).count()) > 0,
+    'Select dropdown trigger labels are Spanish',
+  );
   check(
     (await page.locator('.desktop-table tbody tr[data-id]').count()) <= 8,
     'Desktop pagination bounds rendered records',
@@ -97,9 +123,27 @@ export async function runAcceptance(page, options = {}) {
       await page.locator(width >= 1024 ? '.desktop-table' : '.request-cards').isVisible(),
       `Correct layout at ${width}`,
     );
-    await page.screenshot({ path: resolve(artifacts, `primeng-${width}.png`), fullPage: false });
+    await page.screenshot({
+      animations: 'disabled',
+      path: resolve(artifacts, `primeng-${width}.png`),
+      fullPage: false,
+    });
     const target =
       width >= 1024 ? row(rejected.id) : page.locator(`.request-cards [data-id="${rejected.id}"]`);
+    const rejectIcon = target.getByRole('button', { name: 'Rechazar', exact: true });
+    check(
+      await rejectIcon.evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        return rect.width >= 48 && rect.height >= 48 && button.innerText.trim() === '';
+      }),
+      `Reject uses a 48px icon button at ${width}`,
+    );
+    await rejectIcon.hover();
+    await page.getByRole('tooltip').filter({ hasText: 'Rechazar' }).waitFor();
+    check(
+      await page.getByRole('tooltip').filter({ hasText: 'Rechazar' }).isVisible(),
+      `Reject tooltip is Spanish at ${width}`,
+    );
     await target.getByRole('button', { name: 'Rechazar', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await dialog.waitFor();
@@ -129,9 +173,37 @@ export async function runAcceptance(page, options = {}) {
       `Dialog fits at ${width}`,
     );
     await page.screenshot({
+      animations: 'disabled',
       path: resolve(artifacts, `primeng-dialog-${width}.png`),
       fullPage: false,
     });
+    await page.getByRole('button', { name: 'Revisar rechazo', exact: true }).click();
+    check(
+      await page.getByRole('dialog', { name: 'Confirmar rechazo', exact: true }).isVisible(),
+      `Rejection has final confirmation at ${width}`,
+    );
+    check(
+      await dialog
+        .locator('.confirmation-reason')
+        .getByText('R'.repeat(500), { exact: true })
+        .isVisible(),
+      `Confirmation includes complete rejection reason at ${width}`,
+    );
+    check(
+      (await page.getByRole('dialog').count()) === 1 &&
+        (await page.locator('.p-dialog-mask').count()) === 1,
+      `Only one modal focus trap at ${width}`,
+    );
+    check(decisionRequests.length === 0, `No mutation before confirmation acceptance at ${width}`);
+    await page.screenshot({
+      animations: 'disabled',
+      path: resolve(artifacts, `primeng-confirm-reject-${width}.png`),
+    });
+    await dialog.getByRole('button', { name: 'Cancelar', exact: true }).click();
+    check(
+      (await page.getByLabel('Motivo del rechazo (obligatorio)').inputValue()) === 'R'.repeat(500),
+      `Cancel preserves rejection reason at ${width}`,
+    );
     await page.keyboard.press('Escape');
     await dialog.waitFor({ state: 'hidden' });
     check(!(await dialog.isVisible()), `Escape closes dialog at ${width}`);
@@ -141,6 +213,44 @@ export async function runAcceptance(page, options = {}) {
         .evaluate((button) => button === document.activeElement),
       `Dialog restores trigger focus at ${width}`,
     );
+    const approvalTarget =
+      width >= 1024 ? row(approved.id) : page.locator(`.request-cards [data-id="${approved.id}"]`);
+    const approvalIcon = approvalTarget.getByRole('button', { name: 'Aprobar', exact: true });
+    check(
+      await approvalIcon.evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        return rect.width >= 48 && rect.height >= 48 && button.innerText.trim() === '';
+      }),
+      `Approve uses a 48px icon button at ${width}`,
+    );
+    if (width === 1440)
+      check(
+        await approvalTarget.locator('.actions').evaluate((e) => {
+          const buttons = e.querySelectorAll('button');
+          return (
+            Math.abs(
+              buttons[0].getBoundingClientRect().top - buttons[1].getBoundingClientRect().top,
+            ) < 1
+          );
+        }),
+        'Wide desktop icon actions stay inline',
+      );
+    await approvalIcon.click();
+    await page.getByRole('dialog', { name: 'Confirmar aprobación', exact: true }).waitFor();
+    await page.waitForFunction(
+      () => document.activeElement?.getAttribute('aria-label') === 'Cancelar',
+    );
+    check(
+      await page.getByRole('dialog').getByText(name, { exact: true }).isVisible(),
+      `Approval confirmation includes context at ${width}`,
+    );
+    await page.screenshot({
+      animations: 'disabled',
+      path: resolve(artifacts, `primeng-confirm-approve-${width}.png`),
+    });
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancelar', exact: true }).click();
+    await page.getByRole('dialog').waitFor({ state: 'hidden' });
+    check(decisionRequests.length === 0, `Canceling approval sends no mutation at ${width}`);
   }
   let approvalRequests = 0;
   await page.route(`**/api/reimbursements/${approved.id}/approve`, async (route) => {
@@ -151,18 +261,30 @@ export async function runAcceptance(page, options = {}) {
   });
   const approveButton = row(approved.id).getByRole('button', { name: 'Aprobar', exact: true });
   await approveButton.click();
+  await page.getByRole('dialog', { name: 'Confirmar aprobación', exact: true }).waitFor();
+  check(approvalRequests === 0, 'Opening approval confirmation sends no PATCH');
   check(
-    await row(approved.id).getByRole('button', { name: 'Procesando…' }).isDisabled(),
+    (
+      await page.request
+        .get(`${apiBaseUrl}/api/reimbursements/${approved.id}`)
+        .then((r) => r.json())
+    ).data.status === 'Pending',
+    'Approval stays Pending until acceptance',
+  );
+  await page.getByRole('button', { name: 'Confirmar aprobación', exact: true }).click();
+  check(
+    await row(approved.id).getByRole('button', { name: 'Aprobar', exact: true }).isDisabled(),
     'Repeated mutation disabled while pending',
   );
-  await row(approved.id)
-    .getByRole('button', { name: 'Procesando…' })
+  await page
+    .getByRole('button', { name: 'Enviando…', exact: true })
     .evaluate((button) => button.click());
   await page
     .locator('.p-toast-message')
     .filter({ hasText: `Solicitud #${approved.id} aprobada` })
     .waitFor();
   await waitLoaded();
+  await page.locator('.p-dialog-mask').waitFor({ state: 'detached' });
   check(
     await page
       .locator('.p-toast-message')
@@ -177,7 +299,10 @@ export async function runAcceptance(page, options = {}) {
       .isVisible(),
     'Toast close label is Spanish',
   );
-  await page.screenshot({ path: resolve(artifacts, 'primeng-toast-1440.png') });
+  await page.screenshot({
+    animations: 'disabled',
+    path: resolve(artifacts, 'primeng-toast-1440.png'),
+  });
   for (const width of [360, 768]) {
     await page.setViewportSize({ width, height: width === 360 ? 800 : 1024 });
     const toast = page.locator('.p-toast-message-success');
@@ -188,7 +313,10 @@ export async function runAcceptance(page, options = {}) {
       }),
       `Toast fits at ${width}`,
     );
-    await page.screenshot({ path: resolve(artifacts, `primeng-toast-${width}.png`) });
+    await page.screenshot({
+      animations: 'disabled',
+      path: resolve(artifacts, `primeng-toast-${width}.png`),
+    });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   check(approvalRequests === 1, 'Exactly one approval request sent');
@@ -202,13 +330,13 @@ export async function runAcceptance(page, options = {}) {
     'UI approval persisted in real API',
   );
   await row(rejected.id).getByRole('button', { name: 'Rechazar', exact: true }).click();
-  await page.getByRole('button', { name: 'Confirmar rechazo' }).click();
+  await page.getByRole('button', { name: 'Revisar rechazo' }).click();
   check(
     await page.getByText('Escribe el motivo del rechazo.', { exact: true }).isVisible(),
     'Blank rejection blocked',
   );
   await page.getByLabel('Motivo del rechazo (obligatorio)').fill('   ');
-  await page.getByRole('button', { name: 'Confirmar rechazo' }).click();
+  await page.getByRole('button', { name: 'Revisar rechazo' }).click();
   check(
     await page.getByText('Escribe el motivo del rechazo.', { exact: true }).isVisible(),
     'Whitespace rejection blocked',
@@ -223,6 +351,31 @@ export async function runAcceptance(page, options = {}) {
     await new Promise((resolve) => setTimeout(resolve, 400));
     await route.fulfill({ response });
   });
+  await page.getByRole('button', { name: 'Revisar rechazo', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Confirmar rechazo', exact: true }).waitFor();
+  check(
+    await page
+      .locator('.confirmation-reason')
+      .getByText('Falta el detalle de la actividad corporativa.', { exact: true })
+      .isVisible(),
+    'Final rejection confirmation contains trimmed reason',
+  );
+  check(rejectionRequests === 0, 'Reviewing a reason sends no rejection PATCH');
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  check(
+    (await page.getByLabel('Motivo del rechazo (obligatorio)').inputValue()) ===
+      '  Falta el detalle de la actividad corporativa.  ',
+    'Canceling final confirmation preserves editable original reason',
+  );
+  check(
+    (
+      await page.request
+        .get(`${apiBaseUrl}/api/reimbursements/${rejected.id}`)
+        .then((r) => r.json())
+    ).data.status === 'Pending',
+    'Canceled rejection remains Pending in SQL-backed API',
+  );
+  await page.getByRole('button', { name: 'Revisar rechazo', exact: true }).click();
   await page.getByRole('button', { name: 'Confirmar rechazo' }).click();
   check(
     await page.getByRole('button', { name: 'Enviando…', exact: true }).isDisabled(),
@@ -254,6 +407,7 @@ export async function runAcceptance(page, options = {}) {
   );
   check(external.status() === 200, 'Concurrent reviewer resolved fixture');
   await row(conflict.id).getByRole('button', { name: 'Aprobar', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar aprobación', exact: true }).click();
   await page
     .locator('.p-toast-message')
     .filter({ hasText: 'Esta solicitud ya fue resuelta.' })
