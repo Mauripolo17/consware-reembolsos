@@ -59,7 +59,11 @@ export const ConswarePreset = definePreset(Aura, {
       content: { padding: '0 1.5rem 1.5rem' },
       footer: { padding: '1rem 1.5rem 1.5rem', gap: '.75rem' },
     },
-    toast: { root: { width: '380px', borderRadius: '16px' }, summary: { fontWeight: '650' } },
+    toast: {
+      root: { width: '380px', borderRadius: '16px' },
+      summary: { fontWeight: '600' },
+      closeButton: { width: '48px', height: '48px' },
+    },
     tag: {
       root: { borderRadius: '8px', padding: '.3rem .6rem', fontSize: '.75rem', fontWeight: '600' },
       colorScheme: {

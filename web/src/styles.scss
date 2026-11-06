@@ -1,18 +1,35 @@
+@import 'primeicons/primeicons.css';
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2');
+}
+
 * {
   box-sizing: border-box;
 }
 body {
   margin: 0;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Inter Variable', system-ui, sans-serif;
   color: #0f172a;
   font-size: 16px;
-  background: radial-gradient(ellipse at top right, #dbeafe 0, transparent 55%), #eff6ff;
+  background:
+    radial-gradient(ellipse at 85% 0%, #e0efff 0, transparent 55%),
+    linear-gradient(150deg, #f3f8ff, #eff6ff);
   min-width: 280px;
 }
 button,
-select,
+input,
 textarea,
-a {
+select {
+  font: inherit;
+}
+a,
+button,
+input,
+textarea {
   -webkit-tap-highlight-color: transparent;
 }
 :focus-visible {
@@ -28,4 +45,284 @@ a {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+.p-button {
+  min-height: 48px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+}
+.p-button .p-button-label {
+  font-weight: 600;
+}
+.p-button .p-button-icon {
+  font-size: 13px;
+}
+.p-button-secondary.p-button-outlined {
+  color: #475569;
+  border-color: #dbe4ef;
+  background: #fff;
+}
+.p-button-secondary.p-button-outlined:hover {
+  background: #f8fafd;
+}
+.p-button-danger.p-button-outlined {
+  color: #b91c1c;
+  border-color: #fee2e2;
+  background: #fff;
+}
+.actions p-button,
+.dialog-actions p-button {
+  display: block;
+}
+.actions .p-button,
+.dialog-actions .p-button {
+  width: 100%;
+}
+.status-selector {
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  font-size: 13px;
+  box-shadow: 0 1px 2px #0f172a03;
+}
+.p-select-list {
+  font-size: 13px;
+}
+.p-select-option {
+  min-height: 48px;
+}
+.p-tag {
+  white-space: nowrap;
+}
+.p-tag-warn {
+  color: #9a6700;
+  background: #fff7dd;
+}
+.p-tag-success {
+  color: #087f5b;
+  background: #e7f8f0;
+}
+.p-tag-danger {
+  color: #b42336;
+  background: #ffedf0;
+}
+.p-datatable-table-container {
+  overflow: visible;
+}
+.p-datatable-paginator-bottom {
+  border-top: 1px solid #edf2f8;
+  border-radius: 0 0 24px 24px;
+}
+.p-paginator {
+  padding: 16px 20px;
+  gap: 4px;
+  background: transparent;
+  font-size: 12px;
+}
+.p-paginator button {
+  min-width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+.p-paginator-current {
+  font-size: 12px;
+  color: #64748b;
+  margin-right: auto;
+}
+.p-paginator-rpp-dropdown {
+  min-height: 48px;
+  font-size: 12px;
+}
+.rejection-dialog {
+  max-height: calc(100dvh - 32px);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 32px 100px #0f172a35;
+}
+.rejection-dialog .p-dialog-header {
+  align-items: flex-start;
+  gap: 16px;
+}
+.rejection-dialog .p-dialog-title {
+  font-size: 21px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  overflow-wrap: anywhere;
+}
+.rejection-dialog .p-dialog-header-actions {
+  flex-shrink: 0;
+}
+.rejection-dialog .p-dialog-close-button {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  margin-top: -8px;
+  margin-right: -8px;
+}
+.rejection-dialog textarea {
+  display: block;
+  width: 100%;
+  min-height: 136px;
+  max-height: 220px;
+  resize: vertical;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.p-dialog-mask {
+  background: #0f172a66;
+  backdrop-filter: blur(5px);
+}
+.p-toast {
+  font-family: inherit;
+}
+.p-toast-message {
+  border-radius: 16px;
+  box-shadow: 0 12px 44px #0f172a18;
+}
+.p-toast-summary {
+  font-size: 14px;
+}
+.p-toast-detail {
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.p-toast-close-button {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+}
+.p-toast-message-content {
+  padding: 16px;
+  gap: 12px;
+}
+.p-toast-message-icon {
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
+}
+@media (max-width: 599px) {
+  .toolbar > p-button .p-button {
+    font-size: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+  }
+  .toolbar > p-button .p-button-label {
+    display: none;
+  }
+  .toolbar > p-button .p-button-icon {
+    font-size: 16px;
+  }
+  .toolbar > p-button .p-button {
+    gap: 0;
+  }
+  .toolbar > p-button {
+    padding-top: 21px;
+  }
+  .p-paginator {
+    padding: 12px 0;
+    gap: 2px;
+  }
+  .p-paginator button {
+    min-width: 48px;
+  }
+  .rejection-dialog .p-dialog-header {
+    padding: 20px 20px 14px;
+  }
+  .rejection-dialog .p-dialog-title {
+    font-size: 19px;
+  }
+  .rejection-dialog .p-dialog-content {
+    padding: 0 20px 16px;
+  }
+  .rejection-dialog .p-dialog-footer {
+    padding: 0 20px 20px;
+  }
+  .rejection-dialog textarea {
+    min-height: 120px;
+    max-height: 180px;
+  }
+  .p-toast-message-content {
+    padding: 12px;
+    gap: 8px;
+  }
+  .p-toast-summary {
+    font-size: 13px;
+  }
+  .p-toast-detail {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  font-weight: 400;
+}
+.p-component,
+.p-button,
+.p-select,
+.p-dialog,
+.p-textarea,
+.p-toast,
+.p-paginator {
+  font-family: inherit;
+}
+.actions .p-button.decision-icon {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 12px;
+}
+.actions .decision-icon .p-button-icon {
+  font-size: 16px;
+}
+.actions .p-button.approve-icon {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #dbeafe;
+}
+.actions .p-button.approve-icon:hover:not(:disabled) {
+  background: #dbeafe;
+}
+.actions .p-button.reject-icon {
+  background: #fff5f5;
+  color: #b91c1c;
+  border-color: #fee2e2;
+}
+.actions .p-button.reject-icon:hover:not(:disabled) {
+  background: #fee2e2;
+}
+.dialog-close-icon {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+}
+.dialog-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.dialog-titlebar h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.5px;
+}
+.rejection-dialog .p-dialog-header {
+  padding-bottom: 16px;
 }

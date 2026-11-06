@@ -21,6 +21,10 @@ export const appConfig: ApplicationConfig = {
     providePrimeNG({
       theme: { preset: ConswarePreset, options: { darkModeSelector: false } },
       translation: spanishTranslation,
+      pt: {
+        select: { dropdown: { 'aria-label': 'Abrir selector' } },
+        table: { table: { 'aria-label': 'Solicitudes de reembolso' } },
+      },
     }),
   ],
 };
